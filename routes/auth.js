@@ -10,8 +10,14 @@ const schemaRegister = Joi.object({
     email: Joi.string().max(1024).required(),
     password: Joi.string().min(6).required()
 })
-
 const schemaLogin = Joi.object({
+    email: Joi.string().max(1024).required(),
+    password: Joi.string().min(6).required()
+})
+const schemaUpdate = Joi.object({
+    id: Joi.string().max(1024).required(),
+    name: Joi.string().min(6).max(255).required(),
+    lastname: Joi.string().max(255).required(),
     email: Joi.string().max(1024).required(),
     password: Joi.string().min(6).required()
 })
@@ -54,96 +60,6 @@ router.post('/registre', async(req, res) => {
             error
         })
     }
-})
-
-router.post('/actualizar', async(req, res) => {
-    //Actualizar de usuario
-    const { error } = schemaRegister.validate(req.body) 
-    if(error){
-       return res.status(400).json({
-            error: error.details[0].message
-        })
-    }
-
-    const isEmailUnique = await User.findOne({email: req.body.email})
-    if (isEmailUnique) {
-        return res.status(400).json({
-            error: "El correo ya existe"
-        })
-    }
-
-    const salt = await bcrypt.genSalt(10)
-    const passwordEncriptado = await bcrypt.hash(req.body.password, salt)
-
-    const usuario = new User({
-        name: req.body.name,
-        lastname: req.body.lastname,
-        email: req.body.email,
-        password: passwordEncriptado, 
-    })
-
-    try {
-       const usuario = await usuario.findBypk(id)
-       if(!usuario){
-        return res.status(404).json({
-            message: "No existe el usuario con el id: " + id
-        });
-       }
-       await usuario.update(body);
-       
-    } catch (error) {
-        res.status(400).json({
-            message: 'Error al guardar',
-            error
-        })
-    }
-})
-
-router.post('/actualizarr', async(req, res) => {
-    //Validacion de usuario
-    const { error } = schemaRegister.validate(req.body) 
-    if(error){
-       return res.status(400).json({
-            error: error.details[0].message
-        })
-    }
-
-    const isEmailUnique = await User.findOne({email: req.body.email})
-    if (isEmailUnique) {
-        return res.status(400).json({
-            error: "El correo ya existe"
-        })
-    }
-
-    const salt = await bcrypt.genSalt(10)
-    const passwordEncriptado = await bcrypt.hash(req.body.password, salt)
-
-    const usuario = new User({
-        name: req.body.name,
-        lastname: req.body.lastname,
-        email: req.body.email,
-        password: passwordEncriptado, 
-    })
-
-    try {
-        const guardado = await usuario.findAndModify({
-         id: usuario.id
-        }, [['id', 'asc']],{
-         $set:{
-             "username":usuario.name,
-             "email":usuario.email
-         }
-        })
-        res.json({
-         message: 'Success',
-         data: guardado
-        })
-     } catch (error) {
-         res.status(400).json({
-             message: 'Error al guardar',
-             error
-         })
-     }
 })
 
 router.post('/login', async(req, res)=> {
@@ -208,6 +124,46 @@ router.post('/erauser', async(req, res) => {
     }else{
         return res.status(400).json({
             error: "No se pudo borrar el usuario"
+        })
+    }
+})
+
+router.post('/updateuser', async(req, res) => {
+    //Validacion de usuario
+    const { error } = schemaUpdate.validate(req.body) 
+    if(error){
+       return res.status(400).json({
+            error: error.details[0].message
+        })
+    }
+
+    const isEmailUnique = await User.findOne({email: req.body.email})
+    if (isEmailUnique) {
+        return res.status(400).json({
+            error: "El correo ya existe no podemos actualizar el usuario"
+        })
+    }
+
+    const salt = await bcrypt.genSalt(10)
+    const passwordEncriptado = await bcrypt.hash(req.body.password, salt)
+
+    const usuario = {
+        name: req.body.name,
+        lastname: req.body.lastname,
+        email: req.body.email,
+        password: passwordEncriptado, 
+    }
+
+    try {
+       const actualizado = await User.findByIdAndUpdate(req.body.id, usuario, {new: true})
+       res.json({
+        message: 'Success Update',
+        data: actualizado
+       })
+    } catch (error) {
+        res.status(400).json({
+            message: 'Error al Actualizar',
+            error
         })
     }
 })
